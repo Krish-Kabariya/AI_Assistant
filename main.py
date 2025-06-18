@@ -7,12 +7,11 @@ from openai import OpenAI
 from gtts import gTTS
 import pygame
 import os
-
-# pip install pocketsphinx
+import urllib.parse
 
 recognizer = sr.Recognizer()
-engine = pyttsx3.init() 
-newsapi = "15283a9bb24b1492246484046204a28d"
+engine = pyttsx3.init()
+api_key_1 = "01946cebd62346c8a3be607fc32a6945"
 
 def speak_old(text):
     engine.say(text)
@@ -20,97 +19,97 @@ def speak_old(text):
 
 def speak(text):
     tts = gTTS(text)
-    tts.save('temp.mp3') 
-
-    # Initialize Pygame mixer
+    tts.save('temp.mp3')
     pygame.mixer.init()
-
-    # Load the MP3 file
     pygame.mixer.music.load('temp.mp3')
-
-    # Play the MP3 file
     pygame.mixer.music.play()
-
-    # Keep the program running until the music stops playing
     while pygame.mixer.music.get_busy():
         pygame.time.Clock().tick(10)
-    
     pygame.mixer.music.unload()
-    os.remove("temp.mp3") 
+    os.remove("temp.mp3")
 
 def aiProcess(command):
-    client = OpenAI(api_key="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",
+    client = OpenAI(
+        api_key="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",
     )
-
     completion = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        {"role": "system", "content": "You are a virtual assistant named jarvis skilled in general tasks like Alexa and Google Cloud. Give short responses please"},
-        {"role": "user", "content": command}
-    ]
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a virtual assistant named Arya skilled in general tasks like Alexa and Google Cloud. Give short responses please."},
+            {"role": "user", "content": command}
+        ]
     )
-
     return completion.choices[0].message.content
 
 def processCommand(c):
-    if "open google" in c.lower():
+    c = c.lower().strip()
+    
+    if "open google" in c:
         webbrowser.open("https://google.com")
-    elif "open facebook" in c.lower():
+        speak("Opening Google.")
+    elif "open facebook" in c:
         webbrowser.open("https://facebook.com")
-    elif "open youtube" in c.lower():
+        speak("Opening Facebook.")
+    elif "open youtube" in c:
         webbrowser.open("https://youtube.com")
-    elif "open linkedin" in c.lower():
+        speak("Opening YouTube.")
+    elif "open linkedin" in c:
         webbrowser.open("https://linkedin.com")
-    elif c.lower().startswith("play"):
-        song = c.lower().split(" ")[1]
-        link = musicLibrary.music[song]
-        webbrowser.open(link)
+        speak("Opening LinkedIn.")
+    elif c.startswith("play"):
+        try:
+            song = c.replace("play", "").strip()
+            if song in musicLibrary.music:
+                webbrowser.open(musicLibrary.music[song])
+                speak(f"Playing {song} from your library.")
+            else:
+                speak(f"{song} not found in library. Searching on YouTube.")
+                query = urllib.parse.quote(song)
+                webbrowser.open(f"https://www.youtube.com/results?search_query={query}")
+        except Exception as e:
+            speak("There was an error playing that song.")
+            print(f"Error: {e}")
+    elif "news" in c:
+        response = requests.get(
+            f"https://newsapi.org/v2/everything?q=india&sortBy=publishedAt&pageSize=5&language=en&apiKey={api_key_1}"
+        )
+        print("News API status:", response.status_code)
+        print("News API response:", response.text)
 
-    elif "news" in c.lower():
-        r = requests.get(f"https://newsapi.org/v2/top-headlines?country=in&apiKey={newsapi}")
-        if r.status_code == 200:
-            # Parse the JSON response
-            data = r.json()
-            
-            # Extract the articles
-            articles = data.get('articles', [])
-            
-            # Print the headlines
-            for article in articles:
-                speak(article['title'])
-
+        if response.status_code == 200:
+            articles = response.json().get('articles', [])
+            if not articles:
+                speak("Sorry, I couldn't find any news at the moment.")
+            else:
+                speak("Here are the latest news headlines.")
+                for article in articles[:5]:
+                    speak(article.get('title', 'No title available'))
+        else:
+            speak("Sorry, I couldn't fetch the news.")
     else:
-        # Let OpenAI handle the request
         output = aiProcess(c)
-        speak(output) 
-
-
-
-
+        speak(output)
 
 if __name__ == "__main__":
-    speak("Initializing Jarvis....")
+    speak("Hi! This is Arya, your personal assistant. How can I help you?")
     while True:
-        # Listen for the wake word "Jarvis"
-        # obtain audio from the microphone
-        r = sr.Recognizer()
-         
-        print("recognizing...")
+        print("Listening for wake word...")
         try:
             with sr.Microphone() as source:
-                print("Listening...")
-                audio = r.listen(source, timeout=2, phrase_time_limit=1)
-            word = r.recognize_google(audio)
-            if(word.lower() == "jarvis"):
-                speak("Ya")
-                # Listen for command
+                audio = recognizer.listen(source, timeout=3, phrase_time_limit=1)
+            word = recognizer.recognize_google(audio)
+            if word.lower() == "arya":
+                speak("Yes?")
                 with sr.Microphone() as source:
-                    print("Jarvis Active...")
-                    audio = r.listen(source)
-                    command = r.recognize_google(audio)
-
+                    print("Listening for command...")
+                    audio = recognizer.listen(source)
+                try:
+                    command = recognizer.recognize_google(audio)
+                    print(f"You said: {command}")
                     processCommand(command)
-
-
+                except sr.UnknownValueError:
+                    speak("Sorry, I didn't understand that.")
+        except sr.WaitTimeoutError:
+            pass
         except Exception as e:
-            print("Error; {0}".format(e))
+            print(f"Error: {e}")
