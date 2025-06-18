@@ -14,7 +14,7 @@ load_dotenv() #
 
 recognizer = sr.Recognizer()
 engine = pyttsx3.init()
-api_key_1 = os.getenv("NEWS_API_KEY") #
+api_key_1 = "01946cebd62346c8a3be607fc32a6945"
 
 def speak_old(text):
     engine.say(text)
@@ -33,7 +33,7 @@ def speak(text):
 
 def aiProcess(command):
     client = OpenAI(
-        api_key=os.getenv("OPENAI_API_KEY"), #
+        api_key="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",
     )
     completion = client.chat.completions.create(
         model="gpt-3.5-turbo",
